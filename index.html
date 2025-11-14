@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>予測タイポドメインランキング</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* カスタムスタイル: インターフェース全体を中央配置し、フォントをInterに設定 */
+        body { font-family: 'Inter', sans-serif; background-color: #f8f9fa; }
+        
+        /* テーブルのゼブラストライプとホバーエフェクト */
+        .ranking-table tbody tr:nth-child(even) { background-color: #fcfcfc; }
+        .ranking-table tbody tr:hover { background-color: #f5f5f5; transition: background-color 0.1s; }
+        
+        /* タイポドメインに等幅フォントを適用 */
+        .typo-cell { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
+        
+        /* ヘッダーの固定 */
+        .ranking-table th { position: sticky; top: 0; z-index: 10; }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+
+    <div class="max-w-4xl mx-auto bg-white p-6 md:p-10 rounded-xl shadow-lg border border-gray-100">
+        
+        <h1 class="text-3xl font-extrabold text-gray-800 mb-6 pb-2 border-b-4 border-gray-300">
+            タイポドメイン予測ランキング
+        </h1>
+        <p class="text-gray-600 mb-2">ドメイン名を入力し、予測されるタイポドメイン候補をランキング形式で表示します。</p>
+        <p class="text-gray-500 text-sm mb-6">（タイポドメインとは：ユーザのタイプミスを予測したドメインのこと）</p>
+        
+        <div class="flex flex-col md:flex-row gap-4 mb-8">
+            <input type="text" id="domainInput" placeholder="例: example.com"
+                    class="flex-grow p-3 border border-gray-300 rounded-lg focus:ring-gray-500 focus:border-gray-500 transition shadow-inner">
+            <button onclick="generateRanking()"
+                    class="bg-gray-700 hover:bg-gray-800 text-white font-semibold py-3 px-6 rounded-lg transition duration-200 shadow-md">
+                タイポドメインを生成
+            </button>
+        </div>
+
+        <hr class="border-gray-200 my-4">
+
+        <h2 class="text-xl font-semibold text-gray-700 mb-4">予測結果</h2>
+        
+        <div id="loadingMessage" class="loading hidden text-gray-500 font-medium">分析データをロード中...</div>
+        
+        <div id="totalCostArea" class="hidden bg-gray-100 p-4 rounded-lg mb-6 shadow-sm">
+            <p class="text-lg font-bold text-gray-800">
+                選択ドメインの 1年総額 (税込): 
+                <span id="totalCostDisplay" class="text-red-600 ml-2">¥0</span>
+            </p>
+            <p class="text-xs text-gray-500 mt-1">※ 費用不明のドメインは 0円 として計算しています。</p>
+        </div>
+
+        <div id="rankingOutput">
+            <p class="text-gray-500">ドメイン名を入力して「タイポドメインを生成」をクリックしてください。</p>
+        </div>
+
+    </div>
+    
+    <script src="typo_ranking.js"></script> 
+
+    <script>
+        let typoRanker = null;
+        
+        // 推定費用を数値（円）に変換するヘルパー関数
+        function costToNumber(costStr) {
+            if (typeof costStr !== 'string') return 0;
+            // 数値と小数点、カンマ以外を除去し、数値としてパース
+            const numStr = costStr.replace(/[^\d.]/g, ''); 
+            const number = parseFloat(numStr);
+            return isNaN(number) ? 0 : Math.round(number); // 整数に丸める
+        }
+
+        async function initRanker() {
+            const loading = document.getElementById('loadingMessage');
+            loading.classList.remove('hidden');
+            try {
+                // data.json のフェッチは、このHTMLに埋め込まれたTypoRankerクラスと、
+                // 外部JSファイル typo_ranking.js のTypoRanker定義のどちらかが
+                // 実行環境（ブラウザ）で利用可能であることを前提とする。
+                // 質問文ではTypoRankerクラスが与えられているので、このファイルにTypoRankerクラスを埋め込む。
+                // 外部ファイル読み込みはコメントアウト（またはTypoRankerをこのスクリプトに統合）。
+                // 暫定的に、質問文で与えられたTypoRankerクラスをこのスクリプトブロックの前に含めると仮定します。
+                
+                // ここでは、TypoRankerクラスが既に定義されているものとして、data.jsonを読み込む
+                const response = await fetch('data.json'); 
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const data = await response.json();
+                typoRanker = new TypoRanker(data);
+                console.log("TypoRanker 初期化完了。重みデータをロードしました。");
+                loading.classList.add('hidden');
+            } catch (e) {
+                const output = document.getElementById('rankingOutput');
+                output.innerHTML = `<p class="text-red-500 font-bold">⚠️ [エラー] 重みデータ (data.json) の読み込みに失敗しました。Pythonスクリプトを実行してファイルが生成されているか確認してください。<br>エラー詳細: ${e.message}</p>`;
+                loading.classList.add('hidden');
+                console.error("JSONロードエラー:", e);
+            }
+        }
+        
+        /** 選択されたタイポドメインの合計費用を計算し、表示を更新する */
+        function updateTotalCost() {
+            const checkboxes = document.querySelectorAll('#rankingOutput input[type="checkbox"]:checked');
+            let totalCost = 0;
+
+            checkboxes.forEach(checkbox => {
+                // data-cost 属性から数値の費用を取得
+                const cost = parseInt(checkbox.dataset.cost, 10);
+                if (!isNaN(cost)) {
+                    totalCost += cost;
+                }
+            });
+
+            const totalCostDisplay = document.getElementById('totalCostDisplay');
+            totalCostDisplay.textContent = `¥${totalCost.toLocaleString()}`;
+
+            // 選択項目がある場合にのみ合計費用エリアを表示
+            const totalCostArea = document.getElementById('totalCostArea');
+            if (checkboxes.length > 0) {
+                totalCostArea.classList.remove('hidden');
+            } else {
+                totalCostArea.classList.add('hidden');
+            }
+        }
+
+        function generateRanking() {
+            if (!typoRanker) {
+                document.getElementById('rankingOutput').innerHTML = '<p class="text-red-500">エラー: モデルデータがロードされていません。リロードしてください。</p>';
+                return;
+            }
+
+            const domain = document.getElementById('domainInput').value.trim();
+            const outputDiv = document.getElementById('rankingOutput');
+            outputDiv.innerHTML = ''; // ランキングテーブルをクリア
+            document.getElementById('totalCostArea').classList.add('hidden'); // 合計費用エリアを非表示
+
+            if (!domain) {
+                outputDiv.innerHTML = '<p>ドメイン名を入力してください。</p>';
+                return;
+            }
+
+            const topN = 20; 
+            const predictedTypos = typoRanker.typoGeneratorRanked(domain, topN);
+
+            if (predictedTypos.length === 0) {
+                outputDiv.innerHTML = `<p><strong>${domain}</strong> に対する有力なタイポ候補は見つかりませんでした。</p>`;
+                return;
+            }
+
+            let html = `<h3 class="text-lg font-medium text-gray-700 mb-4">
+                                ${domain}   に対する予測ランキング  (上位 ${predictedTypos.length} 件)
+                            </h3>`;
+
+            // 表形式の開始 (レスポンシブ対応のためオーバーフローコンテナを使用)
+            html += `
+                <div class="overflow-x-auto shadow ring-1 ring-black ring-opacity-5 sm:rounded-lg">
+                <table class="ranking-table min-w-full divide-y divide-gray-300">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900 w-1/12">選択</th>
+                            <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900 w-1/12">順位</th>
+                            <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900 w-5/12">タイポドメイン</th>
+                            <th scope="col" class="px-3 py-3.5 text-right text-sm font-semibold text-gray-900 w-3/12">スコア</th>
+                            <th scope="col" class="px-3 py-3.5 text-right text-sm font-semibold text-gray-900 w-2/12">推定費用 (年額)</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-200 bg-white">
+            `;
+
+            predictedTypos.forEach((r, i) => {
+                // 推定費用を数値（0円または実際の金額）に変換
+                const costNumber = costToNumber(r.cost); 
+                
+                // 各行を生成 
+                html += `
+                    <tr>
+                        <td class="px-3 py-4 whitespace-nowrap text-center">
+                            <input type="checkbox" 
+                                class="h-4 w-4 text-gray-600 border-gray-300 rounded focus:ring-gray-500"
+                                onchange="updateTotalCost()"
+                                data-cost="${costNumber}"
+                                id="typo-${i}">
+                        </td>
+                        <td class="px-3 py-4 whitespace-nowrap text-base text-gray-500">${i + 1}位</td>
+                        <td class="typo-cell px-3 py-4 text-base text-gray-900 font-semibold">${r.typo}</td>
+                        <td class="px-3 py-4 whitespace-nowrap text-right text-base text-gray-500">${r.score.toFixed(7)}</td>
+                        <td class="px-3 py-4 whitespace-nowrap text-right text-base text-gray-600 font-medium">${r.cost}</td>
+                    </tr>
+                `;
+            });
+
+            // 表形式の終了
+            html += `
+                    </tbody>
+                </table>
+                </div>
+
+                <div class="mt-4 text-sm text-gray-500 p-3 border-t border-gray-200">
+                    <p>※ 推定費用は、GMOインターネットグループ株式会社が運営する「お名前ドットコム」の登録料金価格を参考に設定しています。</p>
+                </div>
+            `;
+
+            outputDiv.innerHTML = html;
+        }
+
+        // ページロード時に初期化を実行
+        initRanker();
+
+    </script>
+</body>
+</html>
