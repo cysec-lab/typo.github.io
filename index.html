@@ -16,7 +16,6 @@
         /* タイポドメインに等幅フォントを適用 */
         .typo-cell { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
         
-        /* ヘッダーの固定 */
         .ranking-table th { position: sticky; top: 0; z-index: 10; }
     </style>
 </head>
@@ -30,13 +29,29 @@
         <p class="text-gray-600 mb-2">ドメイン名を入力し、予測されるタイポドメイン候補をランキング形式で表示します。</p>
         <p class="text-gray-500 text-sm mb-6">（タイポドメインとは：ユーザのタイプミスを予測したドメインのこと）</p>
         
+        <div class="mb-6 p-3 bg-gray-50 border border-gray-300 rounded-lg">
+            <p class="text-sm font-medium text-gray-700">本研究について：データ収集・利用ポリシー</p>
+            <a href="https://drive.google.com/file/d/1THr_ulCO87pwO5gK-uACl-9de2_hE8NL/view?usp=sharing" target="_blank" class="inline-block mt-1 text-sm text-gray-600 hover:text-gray-800 underline">
+                ► プライバシーポリシー
+            </a>
+        </div>
+
+        <!-- 入力フォーム -->
         <div class="flex flex-col md:flex-row gap-4 mb-8">
             <input type="text" id="domainInput" placeholder="例: example.com"
-                    class="flex-grow p-3 border border-gray-300 rounded-lg focus:ring-gray-500 focus:border-gray-500 transition shadow-inner">
+                   class="flex-grow p-3 border border-gray-300 rounded-lg focus:ring-gray-500 focus:border-gray-500 transition shadow-inner">
             <button onclick="generateRanking()"
                     class="bg-gray-700 hover:bg-gray-800 text-white font-semibold py-3 px-6 rounded-lg transition duration-200 shadow-md">
                 タイポドメインを生成
             </button>
+        </div>
+
+        <div class="mb-2 text-center">
+            <a href="https://forms.gle/ATDfwwiA76YN75638" target="_blank"
+               class="inline-block bg-orange-500 hover:bg-orange-600 text-white font-bold py-3 px-8 rounded-full transition duration-300 shadow-xl text-lg">
+                実験協力のお願い：アンケートはこちらから
+            </a>
+            <p class="mt-2 text-sm text-gray-500">（本研究の評価アンケートにご協力ください）</p>
         </div>
 
         <hr class="border-gray-200 my-4">
@@ -77,14 +92,6 @@
             const loading = document.getElementById('loadingMessage');
             loading.classList.remove('hidden');
             try {
-                // data.json のフェッチは、このHTMLに埋め込まれたTypoRankerクラスと、
-                // 外部JSファイル typo_ranking.js のTypoRanker定義のどちらかが
-                // 実行環境（ブラウザ）で利用可能であることを前提とする。
-                // 質問文ではTypoRankerクラスが与えられているので、このファイルにTypoRankerクラスを埋め込む。
-                // 外部ファイル読み込みはコメントアウト（またはTypoRankerをこのスクリプトに統合）。
-                // 暫定的に、質問文で与えられたTypoRankerクラスをこのスクリプトブロックの前に含めると仮定します。
-                
-                // ここでは、TypoRankerクラスが既に定義されているものとして、data.jsonを読み込む
                 const response = await fetch('data.json'); 
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);
