@@ -24,7 +24,7 @@
     <div class="max-w-4xl mx-auto bg-white p-6 md:p-10 rounded-xl shadow-lg border border-gray-100">
         
         <h1 class="text-3xl font-extrabold text-gray-800 mb-6 pb-2 border-b-4 border-gray-300">
-            タイポドメイン予測ランキング
+            タイポドメイン生成サイト
         </h1>
         <p class="text-gray-600 mb-2">ドメイン名を入力し、予測されるタイポドメイン候補をランキング形式で表示します。</p>
         <p class="text-gray-500 text-sm mb-6">（タイポドメインとは：ユーザのタイプミスを予測したドメインのこと）</p>
@@ -43,14 +43,6 @@
                     class="bg-gray-700 hover:bg-gray-800 text-white font-semibold py-3 px-6 rounded-lg transition duration-200 shadow-md">
                 タイポドメインを生成
             </button>
-        </div>
-
-        <div class="mb-2 text-center">
-            <a href="https://forms.gle/ATDfwwiA76YN75638" target="_blank"
-               class="inline-block bg-orange-500 hover:bg-orange-600 text-white font-bold py-3 px-8 rounded-full transition duration-300 shadow-xl text-lg">
-                実験協力のお願い：アンケートはこちらから
-            </a>
-            <p class="mt-2 text-sm text-gray-500">（本研究の評価アンケートにご協力ください）</p>
         </div>
 
         <hr class="border-gray-200 my-4">
@@ -158,7 +150,10 @@
 
             let html = `<h3 class="text-lg font-medium text-gray-700 mb-4">
                                 ${domain}   に対する予測ランキング  (上位 ${predictedTypos.length} 件)
-                            </h3>`;
+                            </h3>
+                        <p class="text-gray-500 text-sm mb-6">
+                            登録を検討するドメインを一つ以上選択してください。選択したドメインの年間登録費用の目安が表示されます。
+                            </p>`;
 
             // 表形式の開始 (レスポンシブ対応のためオーバーフローコンテナを使用)
             html += `
