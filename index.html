@@ -26,15 +26,45 @@
         <h1 class="text-3xl font-extrabold text-gray-800 mb-6 pb-2 border-b-4 border-gray-300">
             タイポドメイン生成サイト
         </h1>
-        <p class="text-gray-600 mb-2">ドメイン名を入力し、予測されるタイポドメイン候補をランキング形式で表示します。</p>
-        <p class="text-gray-500 text-sm mb-6">（タイポドメインとは：ユーザのタイプミスを予測したドメインのこと）</p>
-        
-        <div class="mb-6 p-3 bg-gray-50 border border-gray-300 rounded-lg">
-            <p class="text-sm font-medium text-gray-700">本研究について：データ収集・利用ポリシー</p>
-            <a href="https://drive.google.com/file/d/1THr_ulCO87pwO5gK-uACl-9de2_hE8NL/view?usp=sharing" target="_blank" class="inline-block mt-1 text-sm text-gray-600 hover:text-gray-800 underline">
-                ► プライバシーポリシー
-            </a>
+        <p class="text-gray-900 mb-2">ドメイン名を入力し、予測されるタイポスクワッティングドメインをランキング形式で表示します。</p>
+        <div class="mb-4"></div>
+        <div class="bg-slate-50 border-l-4 border-slate-400 p-3 rounded-r-lg mb-4">
+        <div class="flex items-start">
+            <div class="flex-shrink-0">
+                <svg class="h-6 w-6 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+            </div>
+            <div class="ml-3">
+                <h3 class="text-sm font-bold text-slate-800 uppercase tracking-wide mb-1">
+                    タイポスクワッティングドメイン（タイポドメイン）とは
+                </h3>
+                <p class="text-slate-700 text-sm leading-relaxed">
+                    ユーザがキーボード入力で起こしやすいタイプミスを予測して生成された、正規ドメインに似たドメインのこと
+                </p>
+            </div>
         </div>
+    </div>
+
+        <div class="bg-blue-50 border border-blue-200 text-blue-800 px-3 py-2 rounded-lg mb-5 flex items-start shadow-sm ml-2 mr-6">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2 flex-shrink-0 text-blue-500 mt-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+            </svg>
+            <div>
+                <p class="font-bold text-sm">プライバシーとセキュリティについて</p>
+                <p class="text-sm mt-0.5 leading-relaxed">
+                    本サイトで入力された情報はすべて<strong>お使いのブラウザ内でのみ処理</strong>されます。<br>
+                    外部サーバへのデータ送信や、入力データの保存は一切行われません。
+                </p>
+            </div>
+        </div>
+        
+
+        <div id="rankingOutput">
+            <p class="text-gray-900 font-medium">ドメイン名を入力して「タイポドメインを生成」をクリックしてください。</p>
+        </div>
+
+        <div class="mb-2"></div>
 
         <div class="flex flex-col md:flex-row gap-4 mb-8">
             <input type="text" id="domainInput" placeholder="例: example.com"
@@ -44,6 +74,8 @@
                 タイポドメインを生成
             </button>
         </div>
+
+        
 
         <hr class="border-gray-200 my-4">
 
@@ -59,11 +91,17 @@
             <p class="text-xs text-gray-500 mt-1">※ 費用不明のドメインは 0円 として計算しています。</p>
         </div>
 
-        <div id="rankingOutput">
-            <p class="text-gray-500">ドメイン名を入力して「タイポドメインを生成」をクリックしてください。</p>
-        </div>
 
     </div>
+
+    <footer class="mt-auto py-8 text-center">
+        <p class="text-gray-500 text-sm">
+            運営：
+            <a href="https://cysec.ise.ritsumei.ac.jp/" target="_blank" rel="noopener noreferrer" class="text-gray-700 font-bold hover:text-blue-600 hover:underline transition">
+                立命館大学 サイバーセキュリティ研究室
+            </a>
+        </p>
+    </footer>
     
     <script src="typo_ranking.js"></script> 
 
