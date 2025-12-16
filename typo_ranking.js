@@ -301,7 +301,7 @@ class TypoRanker {
             const labels = r.typo.split('.');
             
             // 1. カンマ/スラッシュを含むタイポは引き続き除外
-            if (r.typo.includes(',') || r.typo.includes('/') || r.typo.includes('-')) {
+            if (r.typo.includes(',') || r.typo.includes('/') || r.typo.includes('-') || r.typo.includes('^')) {
                 return false;
             }
             
