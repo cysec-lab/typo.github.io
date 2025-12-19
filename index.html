@@ -169,6 +169,15 @@
             }
         }
 
+        /** ▼ 追加: 全選択・全解除機能 ▼ */
+        function toggleAll(source) {
+            const checkboxes = document.querySelectorAll('#rankingOutput tbody input[type="checkbox"]');
+            checkboxes.forEach(cb => {
+                cb.checked = source.checked;
+            });
+            updateTotalCost(); // 合計金額を再計算
+        }
+
         function generateRanking() {
             if (!typoRanker) {
                 document.getElementById('rankingOutput').innerHTML = '<p class="text-red-500">エラー: モデルデータがロードされていません。リロードしてください。</p>';
@@ -206,9 +215,16 @@
                 <table class="ranking-table min-w-full divide-y divide-gray-300">
                     <thead class="bg-gray-50">
                         <tr>
-                            <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900 w-1/12">選択</th>
+                            <th scope="col" class="px-3 py-3.5 text-center text-sm font-semibold text-gray-900 w-1/12">
+                                <div class="flex flex-col items-center justify-center">
+                                    <input type="checkbox" id="selectAll" onclick="toggleAll(this)"
+                                           class="h-4 w-4 text-gray-600 border-gray-300 rounded focus:ring-gray-500 mb-1">
+                                    <span class="text-[10px] text-gray-700 font-normal">すべて選択</span>
+                                </div>
+                            </th>
+                            
                             <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900 w-1/12">順位</th>
-                            <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900 w-5/12">タイポドメイン</th>
+                            <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900 w-4/12">タイポドメイン</th>
                             <th scope="col" class="px-3 py-3.5 text-right text-sm font-semibold text-gray-900 w-3/12">スコア</th>
                             <th scope="col" class="px-3 py-3.5 text-right text-sm font-semibold text-gray-900 w-2/12">推定費用 (年額)</th>
                         </tr>
