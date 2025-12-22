@@ -266,10 +266,12 @@
                                     <span class="text-[10px] text-gray-700 font-normal">すべて選択</span>
                                 </div>
                             </th>
-                            <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900 w-1/12">順位</th>
+                            <th scope="col" class="px-3 py-3.5 text-center text-sm font-semibold text-gray-900 w-1/12">順位</th>
                             <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900 w-4/12">タイポドメイン</th>
-                            <th scope="col" class="px-3 py-3.5 text-center text-sm font-semibold text-gray-900 w-2/12">空き状況</th> <th scope="col" class="px-3 py-3.5 text-right text-sm font-semibold text-gray-900 w-2/12">スコア</th>
-                            <th scope="col" class="px-3 py-3.5 text-right text-sm font-semibold text-gray-900 w-2/12">推定費用</th>
+    
+                            <th scope="col" class="px-3 py-3.5 text-center text-sm font-semibold text-gray-900 w-2/12">スコア</th>                        <th scope="col" class="px-3 py-3.5 text-center text-sm font-semibold text-gray-900 w-2/12">空き状況</th>
+
+                            <th scope="col" class="px-3 py-3.5 text-center text-sm font-semibold text-gray-900 w-2/12">推定費用</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-gray-200 bg-white">
@@ -285,9 +287,10 @@
                             <input type="checkbox" class="h-4 w-4 text-gray-600 border-gray-300 rounded focus:ring-gray-500"
                                 onchange="updateTotalCost()" data-cost="${costNumber}" id="typo-${i}">
                         </td>
-                        <td class="px-3 py-4 whitespace-nowrap text-base text-gray-500">${i + 1}</td>
+                        <td class="px-3 py-4 whitespace-nowrap text-base text-center text-gray-500">${i + 1}</td>
                         <td class="typo-cell px-3 py-4 text-base text-gray-900 font-semibold">${r.typo}</td>
-                        
+                        <td class="px-3 py-4 whitespace-nowrap text-center text-base text-gray-500">${r.score.toFixed(7)}</td>
+
                         <td class="px-3 py-4 whitespace-nowrap text-center" id="${statusId}">
                             <svg class="animate-spin h-4 w-4 text-gray-400 mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                                 <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
@@ -295,7 +298,6 @@
                             </svg>
                         </td>
 
-                        <td class="px-3 py-4 whitespace-nowrap text-right text-base text-gray-500">${r.score.toFixed(7)}</td>
                         <td class="px-3 py-4 whitespace-nowrap text-right text-base text-gray-600 font-medium">${r.cost}</td>
                     </tr>
                 `;
