@@ -112,16 +112,17 @@
     
     <script src="typo_ranking.js"></script> 
 
+    <script src="typo_ranking.js"></script> 
+
     <script>
         let typoRanker = null;
-        
+
         // 推定費用を数値（円）に変換するヘルパー関数
         function costToNumber(costStr) {
             if (typeof costStr !== 'string') return 0;
-            // 数値と小数点、カンマ以外を除去し、数値としてパース
             const numStr = costStr.replace(/[^\d.]/g, ''); 
             const number = parseFloat(numStr);
-            return isNaN(number) ? 0 : Math.round(number); // 整数に丸める
+            return isNaN(number) ? 0 : Math.round(number);
         }
 
         async function initRanker() {
@@ -134,33 +135,56 @@
                 }
                 const data = await response.json();
                 typoRanker = new TypoRanker(data);
-                console.log("TypoRanker 初期化完了。重みデータをロードしました。");
+                console.log("TypoRanker 初期化完了");
                 loading.classList.add('hidden');
             } catch (e) {
                 const output = document.getElementById('rankingOutput');
-                output.innerHTML = `<p class="text-red-500 font-bold">⚠️ [エラー] 重みデータ (data.json) の読み込みに失敗しました。Pythonスクリプトを実行してファイルが生成されているか確認してください。<br>エラー詳細: ${e.message}</p>`;
+                output.innerHTML = `<p class="text-red-500 font-bold">⚠️ [エラー] data.json の読み込みに失敗しました。</p>`;
                 loading.classList.add('hidden');
                 console.error("JSONロードエラー:", e);
             }
         }
-        
-        /** 選択されたタイポドメインの合計費用を計算し、表示を更新する */
+
+        // ▼▼▼ 追加機能: DNSに問い合わせて空き状況を確認する関数 ▼▼▼
+        async function checkDomainAvailability(domain, elementId) {
+            const statusElement = document.getElementById(elementId);
+            if (!statusElement) return;
+
+            try {
+                // Google Public DNS API を使用 (バッククォートに注意)
+                const url = `https://dns.google/resolve?name=${encodeURIComponent(domain)}`;
+                
+                const response = await fetch(url);
+                const data = await response.json();
+
+                // Status: 0 = NOERROR (IPがある、または登録済み)
+                // Status: 3 = NXDOMAIN (存在しない = 取得可能の可能性大)
+                if (data.Status === 3) {
+                    // 緑色: 取得可能
+                    statusElement.innerHTML = `<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 border border-green-200">取得可能</span>`;
+                } else if (data.Status === 0) {
+                    // 赤色: 取得済 (使用中)
+                    statusElement.innerHTML = `<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 border border-red-200">取得済</span>`;
+                } else {
+                    // その他 (エラーなど)
+                    statusElement.innerHTML = `<span class="text-gray-400 text-xs">不明</span>`;
+                }
+            } catch (error) {
+                console.error("DNS check failed", error);
+                statusElement.innerHTML = `<span class="text-gray-400 text-xs">-</span>`;
+            }
+        }
+
+        // 合計費用の計算
         function updateTotalCost() {
             const checkboxes = document.querySelectorAll('#rankingOutput input[type="checkbox"]:checked');
             let totalCost = 0;
-
             checkboxes.forEach(checkbox => {
-                // data-cost 属性から数値の費用を取得
                 const cost = parseInt(checkbox.dataset.cost, 10);
-                if (!isNaN(cost)) {
-                    totalCost += cost;
-                }
+                if (!isNaN(cost)) totalCost += cost;
             });
-
-            const totalCostDisplay = document.getElementById('totalCostDisplay');
-            totalCostDisplay.textContent = `¥${totalCost.toLocaleString()}`;
-
-            // 選択項目がある場合にのみ合計費用エリアを表示
+            document.getElementById('totalCostDisplay').textContent = `¥${totalCost.toLocaleString()}`;
+            
             const totalCostArea = document.getElementById('totalCostArea');
             if (checkboxes.length > 0) {
                 totalCostArea.classList.remove('hidden');
@@ -169,108 +193,110 @@
             }
         }
 
-        /** ▼ 追加: 全選択・全解除機能 ▼ */
+        // 全選択・全解除
         function toggleAll(source) {
             const checkboxes = document.querySelectorAll('#rankingOutput tbody input[type="checkbox"]');
             checkboxes.forEach(cb => {
                 cb.checked = source.checked;
             });
-            updateTotalCost(); // 合計金額を再計算
+            updateTotalCost();
         }
 
-        function generateRanking() {
+        // ランキング生成メイン処理
+        async function generateRanking() {
             if (!typoRanker) {
-                document.getElementById('rankingOutput').innerHTML = '<p class="text-red-500">エラー: モデルデータがロードされていません。リロードしてください。</p>';
+                document.getElementById('rankingOutput').innerHTML = '<p class="text-red-500">エラー: モデルデータがロードされていません。</p>';
                 return;
             }
 
-            const domain = document.getElementById('domainInput').value.trim();
+            const domainInput = document.getElementById('domainInput');
+            const domain = domainInput.value.trim();
             const outputDiv = document.getElementById('rankingOutput');
-            outputDiv.innerHTML = ''; // ランキングテーブルをクリア
-            document.getElementById('totalCostArea').classList.add('hidden'); // 合計費用エリアを非表示
+            
+            outputDiv.innerHTML = ''; 
+            document.getElementById('totalCostArea').classList.add('hidden'); 
 
             if (!domain) {
-                outputDiv.innerHTML = '<p>ドメイン名を入力してください。</p>';
+                outputDiv.innerHTML = '<p class="text-red-500">ドメイン名を入力してください。</p>';
                 return;
             }
 
+            // タイポ生成（上位20件）
             const topN = 20; 
             const predictedTypos = typoRanker.typoGeneratorRanked(domain, topN);
 
             if (predictedTypos.length === 0) {
-                outputDiv.innerHTML = `<p><strong>${domain}</strong> に対する有力なタイポ候補は見つかりませんでした。</p>`;
+                outputDiv.innerHTML = `<p><strong>${domain}</strong> に対する候補は見つかりませんでした。</p>`;
                 return;
             }
 
-            let html = `<h3 class="text-lg font-medium text-gray-700 mb-4">
-                                ${domain}   に対する予測ランキング  (上位 ${predictedTypos.length} 件)
-                            </h3>
-                        <p class="text-gray-500 text-sm mb-6">
-                            登録を検討するドメインを一つ以上選択してください。選択したドメインの年間登録費用の目安が表示されます。
-                            </p>`;
-
-            // 表形式の開始 (レスポンシブ対応のためオーバーフローコンテナを使用)
-            html += `
+            // テーブルヘッダーの構築（「空き状況」列を追加）
+            let html = `
+                <h3 class="text-lg font-medium text-gray-700 mb-4">
+                    ${domain} に対する予測ランキング (上位 ${predictedTypos.length} 件)
+                </h3>
+                <p class="text-gray-500 text-sm mb-6">
+                    空き状況はDNS参照結果(Google Public DNS)に基づく推定です。正確な情報はレジストラで確認してください。
+                </p>
                 <div class="overflow-x-auto shadow ring-1 ring-black ring-opacity-5 sm:rounded-lg">
                 <table class="ranking-table min-w-full divide-y divide-gray-300">
                     <thead class="bg-gray-50">
                         <tr>
-                            <th scope="col" class="px-3 py-3.5 text-center text-sm font-semibold text-gray-900 w-1/12">
+                            <th scope="col" class="px-3 py-3.5 text-center w-1/12">
                                 <div class="flex flex-col items-center justify-center">
-                                    <input type="checkbox" id="selectAll" onclick="toggleAll(this)"
-                                           class="h-4 w-4 text-gray-600 border-gray-300 rounded focus:ring-gray-500 mb-1">
+                                    <input type="checkbox" id="selectAll" onclick="toggleAll(this)" class="h-4 w-4 text-gray-600 border-gray-300 rounded focus:ring-gray-500 mb-1">
                                     <span class="text-[10px] text-gray-700 font-normal">すべて選択</span>
                                 </div>
                             </th>
-                            
                             <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900 w-1/12">順位</th>
                             <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900 w-4/12">タイポドメイン</th>
-                            <th scope="col" class="px-3 py-3.5 text-right text-sm font-semibold text-gray-900 w-3/12">スコア</th>
-                            <th scope="col" class="px-3 py-3.5 text-right text-sm font-semibold text-gray-900 w-2/12">推定費用 (年額)</th>
+                            <th scope="col" class="px-3 py-3.5 text-center text-sm font-semibold text-gray-900 w-2/12">空き状況</th> <th scope="col" class="px-3 py-3.5 text-right text-sm font-semibold text-gray-900 w-2/12">スコア</th>
+                            <th scope="col" class="px-3 py-3.5 text-right text-sm font-semibold text-gray-900 w-2/12">推定費用</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-gray-200 bg-white">
             `;
 
+            // テーブルボディの構築
             predictedTypos.forEach((r, i) => {
-                // 推定費用を数値（0円または実際の金額）に変換
                 const costNumber = costToNumber(r.cost); 
-                
-                // 各行を生成 
+                const statusId = `status-cell-${i}`; // 各行に固有のIDを振る
+
                 html += `
                     <tr>
                         <td class="px-3 py-4 whitespace-nowrap text-center">
-                            <input type="checkbox" 
-                                class="h-4 w-4 text-gray-600 border-gray-300 rounded focus:ring-gray-500"
-                                onchange="updateTotalCost()"
-                                data-cost="${costNumber}"
-                                id="typo-${i}">
+                            <input type="checkbox" class="h-4 w-4 text-gray-600 border-gray-300 rounded focus:ring-gray-500"
+                                onchange="updateTotalCost()" data-cost="${costNumber}" id="typo-${i}">
                         </td>
-                        <td class="px-3 py-4 whitespace-nowrap text-base text-gray-500">${i + 1}位</td>
+                        <td class="px-3 py-4 whitespace-nowrap text-base text-gray-500">${i + 1}</td>
                         <td class="typo-cell px-3 py-4 text-base text-gray-900 font-semibold">${r.typo}</td>
+                        
+                        <td class="px-3 py-4 whitespace-nowrap text-center" id="${statusId}">
+                            <svg class="animate-spin h-4 w-4 text-gray-400 mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                        </td>
+
                         <td class="px-3 py-4 whitespace-nowrap text-right text-base text-gray-500">${r.score.toFixed(7)}</td>
                         <td class="px-3 py-4 whitespace-nowrap text-right text-base text-gray-600 font-medium">${r.cost}</td>
                     </tr>
                 `;
             });
 
-            // 表形式の終了
-            html += `
-                    </tbody>
-                </table>
-                </div>
-
-                <div class="mt-4 text-sm text-gray-500 p-3 border-t border-gray-200">
-                    <p>※ 推定費用は、GMOインターネットグループ株式会社が運営する「お名前ドットコム」の登録料金価格を参考に設定しています。</p>
-                </div>
-            `;
+            html += `</tbody></table></div>`;
+            html += `<div class="mt-4 text-sm text-gray-500 p-3 border-t border-gray-200"><p>※ 推定費用は参考価格です。</p></div>`;
 
             outputDiv.innerHTML = html;
+
+            // ▼▼▼ 非同期処理: 各ドメインの空き状況をチェックしに行く ▼▼▼
+            // テーブル表示後に実行されるので、ユーザーは待たされません
+            predictedTypos.forEach((r, i) => {
+                checkDomainAvailability(r.typo, `status-cell-${i}`);
+            });
         }
 
-        // ページロード時に初期化を実行
         initRanker();
-
     </script>
 </body>
 </html>

@@ -261,7 +261,7 @@ class TypoRanker {
             const currentTld = parts[parts.length - 1];
             // もし .co.jp のような2階層TLDなら、後ろ2つを見る必要があるが
             // ここでは簡易的にPythonコードのロジックに合わせる
-            const fullTld = parts.length >= 2 && (parts[parts.length-2] === 'co' || parts[parts.length-2] === 'ne' || parts[parts.length-2] === 'go') 
+            const fullTld = parts.length >= 2 && (parts[parts.length-2] === 'co' || parts[parts.length-2] === 'ne' || parts[parts.length-2] === 'go' || parts[parts.length-2] === 'ac') 
                             ? parts.slice(-2).join('.') 
                             : currentTld;
 
