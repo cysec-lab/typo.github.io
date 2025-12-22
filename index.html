@@ -112,8 +112,6 @@
     
     <script src="typo_ranking.js"></script> 
 
-    <script src="typo_ranking.js"></script> 
-
     <script>
         let typoRanker = null;
 
@@ -226,18 +224,38 @@
             const predictedTypos = typoRanker.typoGeneratorRanked(domain, topN);
 
             if (predictedTypos.length === 0) {
-                outputDiv.innerHTML = `<p><strong>${domain}</strong> に対する候補は見つかりませんでした。</p>`;
+                outputDiv.innerHTML = `<p><strong>${domain}</strong> に対するタイポドメイン候補は見つかりませんでした。</p>`;
                 return;
             }
 
-            // テーブルヘッダーの構築（「空き状況」列を追加）
             let html = `
-                <h3 class="text-lg font-medium text-gray-700 mb-4">
-                    ${domain} に対する予測ランキング (上位 ${predictedTypos.length} 件)
-                </h3>
-                <p class="text-gray-500 text-sm mb-6">
-                    空き状況はDNS参照結果(Google Public DNS)に基づく推定です。正確な情報はレジストラで確認してください。
-                </p>
+                <div class="mb-6">
+                    <div class="flex items-baseline justify-between mb-3">
+                        <h3 class="text-xl font-bold text-gray-800">
+                            <span class="text-indigo-600">${domain}</span> の予測ランキング
+                        </h3>
+                        <span class="px-3 py-1 text-xs font-bold text-gray-600 bg-gray-100 rounded-full border border-gray-200 ml-2 mr-2">
+                            上位 ${predictedTypos.length} 件
+                        </span>
+                    </div>
+                    
+                    <div class="bg-blue-50/80 border border-blue-100 rounded-lg p-4 flex items-start gap-3 shadow-sm">
+                        <svg class="w-4 h-4 text-blue-500 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                        
+                        <div class="text-sm">
+                            <p class="font-medium text-blue-900 mb-1">
+                                リストからドメインを一つ以上選択すると、年間登録費用の目安が表示されます。
+                            </p>
+                            <p class="text-blue-700/80 text-xs leading-relaxed">
+                                ※ 空き状況は Google Public DNS への参照結果に基づく推定です。<br class="hidden sm:block">
+                                　 取得可否の確実な情報は各レジストラ（お名前.comなど）でご確認ください。
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="overflow-x-auto shadow ring-1 ring-black ring-opacity-5 sm:rounded-lg">
                 <table class="ranking-table min-w-full divide-y divide-gray-300">
                     <thead class="bg-gray-50">
@@ -257,7 +275,6 @@
                     <tbody class="divide-y divide-gray-200 bg-white">
             `;
 
-            // テーブルボディの構築
             predictedTypos.forEach((r, i) => {
                 const costNumber = costToNumber(r.cost); 
                 const statusId = `status-cell-${i}`; // 各行に固有のIDを振る
@@ -285,7 +302,9 @@
             });
 
             html += `</tbody></table></div>`;
-            html += `<div class="mt-4 text-sm text-gray-500 p-3 border-t border-gray-200"><p>※ 推定費用は参考価格です。</p></div>`;
+            html += `<div class="mt-4 text-sm text-gray-500 p-3 border-t border-gray-200">
+                <p>※ 推定費用は、GMOインターネットグループ株式会社が運営する「お名前.com」の登録料金価格を参考に設定しています。</p>
+                </div>`;
 
             outputDiv.innerHTML = html;
 
