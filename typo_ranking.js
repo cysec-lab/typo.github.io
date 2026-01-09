@@ -1,16 +1,16 @@
 /**
- * @fileoverview Pythonのドメインタイポ予測ロジックをJavaScriptに移植。
- * GitHub Pages上で動作するように設計されています。
- * data.json (Pythonで生成) が必要です。
+ * @fileoverview Pythonのドメインタイポ予測ロジックをJSに移植
+ * ・GitHub Pages上で動作するように設計
+ * ・data.json (Pythonで生成) が必要
  */
 
 class TypoRanker {
     constructor(data) {
-        // data.json から渡された定数と重みデータを格納
+        // data.json から渡されたデータを格納
         this.keyboardAdjacent = data.keyboard_adjacent;
         this.symmetricKeyPairs = data.symmetric_key_pairs; 
         this.homoglyphsForGenerator = data.homoglyphs_for_generator;
-        this.individualWeights = data.individual_weights; // W_individual
+        this.individualWeights = data.individual_weights;
         this.positionalFreqs = data.positional_freqs;     // 位置別頻度
         this.totalDl1Count = data.total_dl1_count || 1;    // 正規化用
         this.kPositionBoost = data.K_POSITION_BOOST || 0.5;
@@ -21,8 +21,7 @@ class TypoRanker {
     // 1. 入力正規化・バリデーション
     // ======================================================================
 
-    /** * 入力を正規化する (小文字化、全角→半角、不要文字削除) 
-     */
+    /** * 入力を正規化する (小文字化、全角→半角、不要文字削除) */
     sanitizeInput(input) {
         if (!input) return "";
         let domain = input.toLowerCase();
@@ -111,7 +110,7 @@ class TypoRanker {
     /** Damerau-Levenshtein距離 (隣接転置=1) */
     _damerauLevenshteinDistance(a, b) {
         const lDist = this._levenshteinDistance(a, b);
-        // 簡易実装: レーベンシュタイン距離が2で、かつ文字数が同じ、かつ転置で一致する場合のみ1を返す
+        // Levenshtein距離が2で、かつ文字数が同じ、かつ転置で一致する場合のみ1を返す
         if (lDist === 2 && a.length === b.length) {
             for (let i = 0; i < a.length - 1; i++) {
                 if (a[i] === b[i+1] && a[i+1] === b[i]) {
@@ -141,7 +140,7 @@ class TypoRanker {
                 }
             }
         } 
-        // 削除 (correctの方が長い) -> Pythonの delete logic
+        // 削除 (correctの方が長い)
         else if (correct.length === typo.length + 1) { 
             for (let i = 0; i < correct.length; i++) {
                 if (correct.slice(0, i) + correct.slice(i + 1) === typo) {
@@ -149,7 +148,7 @@ class TypoRanker {
                 }
             }
         } 
-        // 挿入 (typoの方が長い) -> Pythonの insert logic
+        // 挿入 (typoの方が長い)
         else if (correct.length === typo.length - 1) { 
             for (let i = 0; i < typo.length; i++) {
                 if (typo.slice(0, i) + typo.slice(i + 1) === correct) {
@@ -220,7 +219,6 @@ class TypoRanker {
             const char = c; 
             
             // 1. 入力漏れ (Deletion) 
-            // ※「ドット抜け」はデータ分析では使うが、生成はしないという要望に対応
             if (c !== '.') {
                 addVariant(domain.slice(0, i) + domain.slice(i + 1), "入力漏れ");
             }
@@ -257,10 +255,7 @@ class TypoRanker {
         // 7. TLDミス生成
         const parts = domain.split('.');
         if (parts.length > 1) {
-            // 単純化のため、末尾のパーツをチェック
             const currentTld = parts[parts.length - 1];
-            // もし .co.jp のような2階層TLDなら、後ろ2つを見る必要があるが
-            // ここでは簡易的にPythonコードのロジックに合わせる
             const fullTld = parts.length >= 2 && (parts[parts.length-2] === 'co' || parts[parts.length-2] === 'ne' || parts[parts.length-2] === 'go' || parts[parts.length-2] === 'ac') 
                             ? parts.slice(-2).join('.') 
                             : currentTld;
@@ -348,17 +343,10 @@ class TypoRanker {
                     let posChar = '';
                     let tempCause = cause;
 
-                    // 単一操作の特定
-                    // JSで簡易diffを行う (identifySingleReplacementで既に文字は特定済)
                     if (c1 && c1 !== '（空）') { // 削除 or 置換
-                        iStart = domain.indexOf(c1); // ※簡易的。厳密にはdiffが必要だが予測生成ではループ順iを使える
-                        // ただしここでは variants ループ内なので i がない。
-                        // 文字列検索で代用 (複数ある場合は最初の位置になる制限あり)
+                        iStart = domain.indexOf(c1); 
                         posChar = c1;
                     } else if (c2 && c2 !== '（空）') { // 挿入
-                        // typo内のどこに挿入されたか
-                        // domain: example, typo: exxample -> inserted x at index 2
-                        // 簡易ロジック: 一致しない最初の場所を探す
                         for(let k=0; k<typo.length; k++) {
                             if (domain[k] !== typo[k]) {
                                 iStart = k;
@@ -377,7 +365,7 @@ class TypoRanker {
                          finalScore += positionBonusValue * this.kPositionBoost;
                     }
                 } 
-            } // end for causes
+            }
             
             // 複合ミスのペナルティ
             if (causes.size > 1) finalScore *= 0.5; 

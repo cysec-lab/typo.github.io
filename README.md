@@ -1,2 +1,1 @@
-# typo.github.io
-typoのWebサイト＿大西
+タイポドメイン生成サイト
